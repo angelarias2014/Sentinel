@@ -118,6 +118,12 @@ Este es el paso más crítico. En la pestaña **Environment Variables**, añade:
 | `VITE_BASE_AERODROME_ROUTER` | Dirección de Aerodrome Router (Base) | `0x...` |
 | `VITE_BASE_MOONWELL_COMPTROLLER` | Dirección de Moonwell Comptroller (Base) | `0x...` |
 | `VITE_BASE_MORPHO` | Dirección de Morpho (Base) | `0x...` |
+| `VITE_BASE_VAULT_ADDRESS` | Dirección real del Vault en Base | `0x...` |
+| `VITE_BASE_TREASURY_ADDRESS` | Dirección real del Treasury en Base | `0x...` |
+| `VITE_BASE_FACTORY_ADDRESS` | Dirección real del Factory en Base | `0x...` |
+| `VITE_BASE_ORACLE_ADDRESS` | Dirección real del Oracle en Base | `0x...` |
+| `VITE_BASE_SEPOLIA_VAULT_ADDRESS` | Dirección real del Vault en Base Sepolia | `0x...` |
+| `VITE_BASE_SEPOLIA_AAVE_V3_POOL` | Dirección real de Aave V3 Pool en Base Sepolia | `0x...` |
 
 **Nota**: Las variables que empiezan por `VITE_` son accesibles desde el navegador. La `GEMINI_API_KEY` **NUNCA** debe llevar el prefijo `VITE_` para mantenerse segura en el servidor.
 

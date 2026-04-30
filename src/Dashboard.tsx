@@ -352,7 +352,7 @@ export function Dashboard() {
              </div>
              <div className="text-right">
                 <p className="text-[9px] font-mono text-zinc-700 uppercase tracking-tighter">Treasury Reserve</p>
-                <p className="text-xs font-mono font-black text-zinc-500 underline decoration-zinc-800 cursor-pointer">{system.TREASURY.slice(0, 16)}...</p>
+                <p className="text-xs font-mono font-black text-zinc-500 underline decoration-zinc-800 cursor-pointer">{(system.TREASURY ?? "0x").slice(0, 16)}...</p>
              </div>
           </div>
         </div>
@@ -541,7 +541,7 @@ export function Dashboard() {
                           <div className="mt-4 flex items-center gap-6 relative z-10">
                              <div className="flex flex-col">
                                 <span className="text-[9px] font-black text-zinc-700 uppercase">Vault Instance</span>
-                                <span className="text-xs font-mono font-bold text-zinc-500 underline decoration-zinc-800">{system.VAULT.slice(0, 16)}...</span>
+                                <span className="text-xs font-mono font-bold text-zinc-500 underline decoration-zinc-800">{(system.VAULT ?? "0x").slice(0, 16)}...</span>
                              </div>
                              <div className="w-1 h-8 bg-zinc-800" />
                              <div className="flex flex-col">
