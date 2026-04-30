@@ -152,6 +152,185 @@ Haz clic en **Deploy**. Una vez finalizado, verifica la salud de la API visitand
 
 ---
 
+## 🧭 Arquitectura Técnica (End-to-End)
+
+Sentinel se organiza en 4 capas:
+
+1. **Capa de Usuario (Frontend React + Wagmi)**  
+   Maneja conexión wallet, lectura de balances, depósitos/retiros, visualización de riesgo y switching Base/Base Sepolia.
+
+2. **Capa de Orquestación (Backend Express + Gemini)**  
+   Recibe contexto de mercado/protocolo, consulta Gemini y genera señales de riesgo estructuradas para consumo on-chain.
+
+3. **Capa de Ejecución On-Chain (Contratos Solidity)**  
+   Vaults, factory, treasury, oráculo y adapters ejecutan reglas de seguridad, custodia y estrategias.
+
+4. **Capa de Liquidez Externa (Aave/DEX/otros protocolos)**  
+   Los adapters conectan con protocolos de rendimiento para asignar capital con control de riesgo.
+
+### Diagrama lógico (alto nivel)
+
+```mermaid
+flowchart LR
+  U[Usuario] --> D[Dashboard React]
+  D --> W[Wagmi/Viem]
+  W --> V[SentinelVault]
+  V --> T[Treasury]
+  V --> O[SentinelChainlinkOracle]
+  F[VaultFactory] --> V
+  V --> A[Yield Adapter]
+  A --> P[(Aave / DEX / Lending)]
+  B[Backend Express] --> G[Gemini]
+  G --> B
+  B --> O
+```
+
+### Flujograma operativo de riesgo
+
+```mermaid
+flowchart TD
+  S[Start ciclo de monitoreo] --> C[Recolectar contexto de mercado]
+  C --> AI[Analizar con Gemini]
+  AI --> R{Risk score > threshold?}
+  R -- No --> N[Continuar operación normal]
+  R -- Sí --> E[Activar Emergency Shield]
+  E --> W1[Desasignar de protocolo externo]
+  W1 --> V1[Resguardar fondos en Vault]
+  V1 --> A1[Emitir eventos + actualizar UI]
+  A1 --> END[Fin ciclo]
+  N --> END
+```
+
+---
+
+## 📜 Contratos Inteligentes: detalle y relaciones
+
+### 1) `SentinelVault.sol`
+- Contrato principal de custodia y operaciones de usuario (deposit/withdraw).
+- Integra lógica de riesgo y modo de protección (Emergency Shield).
+- Interactúa con:
+  - `IYieldAdapter` para estrategia externa.
+  - `SentinelChainlinkOracle` para score de riesgo.
+  - `SentinelTreasury` para gestión de fees.
+
+### 2) `SentinelVaultERC4626.sol`
+- Variante/implementación bajo estándar ERC-4626 para vault tokens.
+- Estandariza accounting de shares/assets y compatibilidad con tooling DeFi.
+
+### 3) `SentinelVaultFactory.sol`
+- Fábrica para desplegar/configurar nuevas instancias de Vault.
+- Controla permisos administrativos y parametrización inicial por activo.
+
+### 4) `SentinelTreasury.sol`
+- Acumula y administra comisiones del sistema.
+- Permite separación entre lógica de usuario y caja del protocolo.
+
+### 5) `SentinelChainlinkOracle.sol`
+- Punto on-chain para publicar/leer riesgo agregado.
+- Soporta control de roles para evitar escritura no autorizada.
+- Se integra con backend/oracle operators para actualizaciones periódicas.
+
+### 6) Adapters de rendimiento
+- `AaveV3Adapter.sol`
+- `UniswapV3Adapter.sol`
+- `QuickswapV3Adapter.sol`
+- `BalancerV2Adapter.sol`
+
+Estos contratos abstraen diferencias entre protocolos externos para que el Vault use una interfaz uniforme (`IYieldAdapter.sol`).
+
+### 7) Interfaces y mocks
+- `ISentinelOracle.sol`, `IYieldAdapter.sol` para desacoplar implementación/consumo.
+- Mocks en `contracts/mocks/` para pruebas de seguridad, edge cases y escenarios adversos.
+
+### Relaciones contractuales (resumen)
+
+```mermaid
+flowchart LR
+  Factory[SentinelVaultFactory] --> Vault[SentinelVault]
+  Vault --> Treasury[SentinelTreasury]
+  Vault --> Oracle[SentinelChainlinkOracle]
+  Vault --> Adapter[IYieldAdapter]
+  Adapter --> External[(Aave / AMM / Lending)]
+```
+
+---
+
+## 🚀 Despliegue paso a paso (muy detallado)
+
+### A. Preparación local
+1. Clona repo e instala dependencias.
+2. Define `.env` completo con todas las direcciones requeridas (sin `0x000...`).
+3. Verifica que `DEPLOYER_PRIVATE_KEY` tenga permisos/fondos en la red objetivo.
+4. Confirma RPCs:
+   - `VITE_BASE_RPC_URL`
+   - `VITE_BASE_SEPOLIA_RPC_URL`
+
+### B. Checklist previo a deploy
+1. Compila contratos:
+   ```bash
+   npx hardhat compile
+   ```
+2. Corre tests (recomendado):
+   ```bash
+   npx hardhat test
+   ```
+3. Ejecuta build frontend para validar tipado/config:
+   ```bash
+   npm run build
+   ```
+
+### C. Deploy en Base Sepolia
+1. Configura variables específicas de testnet (`VITE_BASE_SEPOLIA_*`, `BASE_SEPOLIA_AAVE_V3_POOL`).
+2. Ejecuta:
+   ```bash
+   npx hardhat run scripts/deploy.ts --network baseSepolia
+   ```
+3. Guarda el output (`ORACLE=`, `TREASURY=`, `FACTORY=` y `DEFAULT_ADAPTER=`).
+4. Actualiza variables frontend/backend con esas direcciones.
+5. Haz smoke test funcional:
+   - conectar wallet,
+   - approve token,
+   - deposit pequeño,
+   - retiro parcial.
+
+### D. Deploy en Base Mainnet
+1. Repite el proceso con `VITE_BASE_*` y `BASE_AAVE_V3_POOL`.
+2. Ejecuta:
+   ```bash
+   npx hardhat run scripts/deploy.ts --network base
+   ```
+3. Aplica control de cambios:
+   - registro de direcciones finales,
+   - validación de ownership/roles,
+   - verificación de contratos en explorador.
+
+### E. Post-deploy (operación)
+1. Configura jobs del oracle operator (frecuencia, alertas, fallback).
+2. Define umbrales de riesgo y runbooks de emergencia.
+3. Monitorea:
+   - eventos de activación de shield,
+   - crecimiento de TVL,
+   - latencia de actualización de riesgo.
+
+---
+
+## 🌍 Ejemplo de uso real (caso práctico)
+
+**Escenario:** una DAO mantiene tesorería operativa en USDC/WETH y desea rendimiento sin exponerse a eventos extremos.
+
+1. La DAO deposita capital en un Vault de Sentinel.
+2. El Vault asigna parte del capital a un protocolo de rendimiento vía adapter.
+3. El backend analiza continuamente señales de mercado y salud del protocolo.
+4. Si el score de riesgo supera el umbral (ej. >80):
+   - el Vault ejecuta retirada defensiva (Emergency Shield),
+   - los fondos se mantienen en custodia segura dentro del vault,
+   - la DAO mantiene capacidad de retiro.
+5. Cuando el riesgo vuelve a rango saludable, la estrategia puede reactivarse bajo gobernanza/política interna.
+
+**Resultado esperado:** mejor balance entre generación de yield y preservación de capital ante shocks de mercado.
+
+---
+
 ## 🛡️ Seguridad
 Sentinel Vault ha sido diseñado bajo los principios de **Trustless AI**:
 -   Las actualizaciones de riesgo están firmadas.
