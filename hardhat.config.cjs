@@ -14,12 +14,12 @@ module.exports = {
     },
   },
   networks: {
-    amoy: {
-      url: process.env.VITE_AMOY_RPC_URL || "https://rpc-amoy.polygon.technology",
+    baseSepolia: {
+      url: process.env.VITE_BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org",
       accounts: process.env.DEPLOYER_PRIVATE_KEY && process.env.DEPLOYER_PRIVATE_KEY.length === 64 ? [process.env.DEPLOYER_PRIVATE_KEY] : process.env.DEPLOYER_PRIVATE_KEY && process.env.DEPLOYER_PRIVATE_KEY.length === 66 ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
     },
-    polygon: {
-      url: process.env.VITE_MAINNET_RPC_URL || "https://polygon-rpc.com",
+    base: {
+      url: process.env.VITE_BASE_RPC_URL || "https://mainnet.base.org",
       accounts: process.env.DEPLOYER_PRIVATE_KEY && process.env.DEPLOYER_PRIVATE_KEY.length === 64 ? [process.env.DEPLOYER_PRIVATE_KEY] : process.env.DEPLOYER_PRIVATE_KEY && process.env.DEPLOYER_PRIVATE_KEY.length === 66 ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
     }
   },

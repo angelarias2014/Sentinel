@@ -14,9 +14,9 @@ En el panorama DeFi actual, los riesgos de mercado (desanclaje de stablecoins, e
 
 ## 🚀 Características Principales
 -   **AI Risk Oracle**: Motor basado en Gemini 1.5 que procesa feeds de datos y emite scores de riesgo (0-100).
--   **Automated Emergency Shield**: Si el riesgo > 80, el contrato retira automáticamente los activos del yield-source (Aave) y los resguarda en el Vault.
+-   **Automated Emergency Shield**: Si el riesgo > 80, el contrato retira automáticamente los activos del yield-source y los resguarda en el Vault.
 -   **Multi-Asset Treasury**: Gestión centralizada de yields y fees para sostenibilidad del protocolo.
--   **Dashboard en Tiempo Real**: Visualización de métricas de riesgo, balances y estado de la red Polygon Amoy.
+-   **Dashboard en Tiempo Real**: Visualización de métricas de riesgo, balances y estado de la red Base Sepolia.
 -   **Gas Optimized**: Contratos escritos con patrones de optimización de gas (Custom Errors, slot packing).
 
 ---
@@ -33,8 +33,8 @@ En el panorama DeFi actual, los riesgos de mercado (desanclaje de stablecoins, e
 
 ### 1. Requisitos Técnicos
 -   **Node.js**: v18.0.0 o superior.
--   **Wallet**: Metamask o similar con configuración para **Polygon Amoy**.
--   **Faucet**: Obtén tokens de prueba en [Polygon Faucet](https://faucet.polygon.technology/).
+-   **Wallet**: Metamask o similar con configuración para **Base Sepolia**.
+-   **Faucet**: Obtén tokens de prueba en [Base Faucet](https://www.coinbase.com/faucets/base-ethereum-sepolia-faucet).
 
 ### 2. Instalación
 ```bash
@@ -87,12 +87,16 @@ Este es el paso más crítico. En la pestaña **Environment Variables**, añade:
 | Variable | Descripción | Valor Ejemplo |
 | :--- | :--- | :--- |
 | `GEMINI_API_KEY` | Clave secreta de Google AI Studio | `AIzaSy...` |
-| `VITE_MAINNET_RPC_URL` | RPC para Polygon Mainnet | `https://polygon-rpc.com` |
-| `VITE_AMOY_RPC_URL` | RPC para Polygon Amoy | `https://rpc-amoy.polygon.technology` |
+| `VITE_BASE_RPC_URL` | RPC para Base Mainnet | `https://mainnet.base.org` |
+| `VITE_BASE_SEPOLIA_RPC_URL` | RPC para Base Sepolia | `https://sepolia.base.org` |
 | `DEPLOYER_PRIVATE_KEY` | Key para interactuar con contratos (opcional en front) | `0x...` |
-| `VITE_AMOY_FACTORY_ADDRESS` | Dirección del Vault Factory (Amoy) | `0xEC8B2c8f60DDe002349d85d51E218FC51DCe2a20` |
-| `VITE_AMOY_TREASURY_ADDRESS` | Dirección del Treasury (Amoy) | `0xA8A722f3E802b453599Ca23EC0e674C3015990BD` |
-| `VITE_AMOY_ORACLE_ADDRESS` | Dirección del Oráculo (Amoy) | `0x8eD545Cc30f9e0cEA0AB913d233934EaC80dfFc5` |
+| `VITE_BASE_SEPOLIA_FACTORY_ADDRESS` | Dirección del Vault Factory (Base Sepolia) | `0xEC8B2c8f60DDe002349d85d51E218FC51DCe2a20` |
+| `VITE_BASE_SEPOLIA_TREASURY_ADDRESS` | Dirección del Treasury (Base Sepolia) | `0xA8A722f3E802b453599Ca23EC0e674C3015990BD` |
+| `VITE_BASE_SEPOLIA_ORACLE_ADDRESS` | Dirección del Oráculo (Base Sepolia) | `0x8eD545Cc30f9e0cEA0AB913d233934EaC80dfFc5` |
+| `VITE_BASE_AAVE_V3_POOL` | Dirección de Aave V3 Pool (Base) | `0x...` |
+| `VITE_BASE_AERODROME_ROUTER` | Dirección de Aerodrome Router (Base) | `0x...` |
+| `VITE_BASE_MOONWELL_COMPTROLLER` | Dirección de Moonwell Comptroller (Base) | `0x...` |
+| `VITE_BASE_MORPHO` | Dirección de Morpho (Base) | `0x...` |
 
 **Nota**: Las variables que empiezan por `VITE_` son accesibles desde el navegador. La `GEMINI_API_KEY` **NUNCA** debe llevar el prefijo `VITE_` para mantenerse segura en el servidor.
 
@@ -109,7 +113,7 @@ Haz clic en **Deploy**. Una vez finalizado, verifica la salud de la API visitand
 ## 📂 Estructura del Proyecto
 ```text
 ├── contracts/          # Contratos de Solidity (Vault, Treasury, Factory)
-├── scripts/            # Scripts de despliegue en Amoy
+├── scripts/            # Scripts de despliegue en Base Sepolia
 ├── src/                # Código fuente del Frontend
 │   ├── components/     # Componentes de UI (Cards, Modals, Layout)
 │   ├── lib/            # ABIs, Direcciones y Utilidades
@@ -128,4 +132,4 @@ Sentinel Vault ha sido diseñado bajo los principios de **Trustless AI**:
 -   El usuario siempre tiene control final sobre sus fondos para retiro manual.
 
 ---
-© 2024 Sentinel Vault Team | Built for Polygon DevX Global Tour.
+© 2024 Sentinel Vault Team | Built for Base ecosystem.

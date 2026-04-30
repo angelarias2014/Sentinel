@@ -23,17 +23,17 @@ export function Dashboard() {
   // App Logic State
   const [activeTab, setActiveTab] = useState<"portfolio" | "vault" | "sentinel" | "admin">("portfolio");
   const [selectedAssetIdx, setSelectedAssetIdx] = useState(0);
-  const [selectedProtocolKey, setSelectedProtocolKey] = useState<string>("AAVE_V3");
+  const [selectedProtocolKey, setSelectedProtocolKey] = useState<string>("AAVE_V3_POOL");
   const [amount, setAmount] = useState("");
   const [isChainMenuOpen, setIsChainMenuOpen] = useState(false);
   const [aiScores, setAiScores] = useState<Record<string, { score: number, justification: string, analyzing: boolean }>>({});
   
-  const isPolygon = chainId === SUPPORTED_CHAINS.POLYGON;
-  const isAmoy = chainId === SUPPORTED_CHAINS.AMOY;
+  const isBase = chainId === SUPPORTED_CHAINS.BASE;
+  const isBaseSepolia = chainId === SUPPORTED_CHAINS.BASE_SEPOLIA;
   
-  const assets = useMemo(() => ASSETS[chainId as keyof typeof ASSETS] || ASSETS[SUPPORTED_CHAINS.POLYGON], [chainId]);
-  const protocols = useMemo(() => PROTOCOLS[chainId as keyof typeof PROTOCOLS] || PROTOCOLS[SUPPORTED_CHAINS.POLYGON], [chainId]);
-  const system = useMemo(() => VAULT_SYSTEM[chainId as keyof typeof VAULT_SYSTEM] || VAULT_SYSTEM[SUPPORTED_CHAINS.POLYGON], [chainId]);
+  const assets = useMemo(() => ASSETS[chainId as keyof typeof ASSETS] || ASSETS[SUPPORTED_CHAINS.BASE], [chainId]);
+  const protocols = useMemo(() => PROTOCOLS[chainId as keyof typeof PROTOCOLS] || PROTOCOLS[SUPPORTED_CHAINS.BASE], [chainId]);
+  const system = useMemo(() => VAULT_SYSTEM[chainId as keyof typeof VAULT_SYSTEM] || VAULT_SYSTEM[SUPPORTED_CHAINS.BASE], [chainId]);
   const selectedAsset = assets[selectedAssetIdx] || assets[0];
 
   const { data: isAdminRole } = useReadContract({
@@ -113,8 +113,8 @@ export function Dashboard() {
       const amount = parseFloat(formatUnits(deposit, token.decimals));
       if (token.symbol.includes("USD")) total += amount;
       if (token.symbol === "WETH") total += amount * 3000; // Estimated market price
-      if (token.symbol === "WPOL") total += amount * 0.7; // Estimated market price
-      if (token.symbol === "WBTC") total += amount * 65000; // Estimated market price
+      if (token.symbol === "cbBTC") total += amount * 65000; // Estimated market price
+      
     });
     return total;
   }, [vaultGlobalData, assets]);
@@ -125,8 +125,8 @@ export function Dashboard() {
       const amount = parseFloat(p.formattedBalance);
       if (p.symbol.includes("USD")) total += amount;
       if (p.symbol === "WETH") total += amount * 3000;
-      if (p.symbol === "WPOL") total += amount * 0.7;
-      if (p.symbol === "WBTC") total += amount * 65000;
+      if (p.symbol === "cbBTC") total += amount * 65000;
+      
     });
     return total;
   }, [userPortfolio]);
@@ -215,7 +215,7 @@ export function Dashboard() {
     // In a full implementation, we'd fetch the Aave Pool health factor for the specific user here.
     const context = {
       name: protocolName,
-      network: isPolygon ? "Polygon POS" : "Polygon Amoy",
+      network: isBase ? "Base Mainnet" : "Base Sepolia",
       tvl: `$${totalValueSecured.toLocaleString()} (Vault Stats)`,
       volume: "Syncing live feed...",
       healthFactor: "DYNAMIC_MONITORING", 
@@ -226,7 +226,7 @@ export function Dashboard() {
     setAiScores(prev => ({ ...prev, [protocolName]: { score: res.score, justification: res.justification, analyzing: false } }));
   };
 
-  const currentChainName = isPolygon ? "Polygon POS" : isAmoy ? "Amoy Testnet" : "Connected";
+  const currentChainName = isBase ? "Base Mainnet" : isBaseSepolia ? "Base Sepolia" : "Connected";
 
   return (
     <div className="min-h-screen bg-zinc-950 technical-grid text-white font-sans selection:bg-emerald-500/30 selection:text-emerald-200 antialiased overflow-x-hidden">
@@ -286,8 +286,8 @@ export function Dashboard() {
                     className="absolute top-16 right-0 w-64 bg-[#0A0A0A] border border-zinc-800 rounded-3xl shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden z-50 p-2 border-t-emerald-500/40"
                   >
                     {[
-                      { id: SUPPORTED_CHAINS.POLYGON, name: 'Polygon POS' },
-                      { id: SUPPORTED_CHAINS.AMOY, name: 'A-MOY Testnet' }
+                      { id: SUPPORTED_CHAINS.BASE, name: 'Base Mainnet' },
+                      { id: SUPPORTED_CHAINS.BASE_SEPOLIA, name: 'Base Sepolia' }
                     ].map(chain => (
                       <button
                         key={chain.id}
@@ -316,10 +316,10 @@ export function Dashboard() {
       <main className="max-w-[1800px] mx-auto p-10 lg:p-14 relative">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-gradient-to-b from-emerald-500/[0.03] to-transparent pointer-events-none" />
 
-        {address && !isPolygon && !isAmoy && (
+        {address && !isBase && !isBaseSepolia && (
           <div className="mx-10 mt-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center justify-center gap-4 text-rose-500 text-xs font-black uppercase tracking-widest">
             <AlertCircle className="w-5 h-5" />
-            Unsupported Network. Please switch to Polygon or Amoy for real-time state analysis.
+            Unsupported Network. Please switch to Base Mainnet or Base Sepolia for real-time state analysis.
           </div>
         )}
 
@@ -481,7 +481,7 @@ export function Dashboard() {
                                   <div className="flex flex-col">
                                     <p className="text-xs font-black text-zinc-300 uppercase italic tracking-widest">{token.symbol} Multi-Protocol Vault</p>
                                     <div className="flex items-center gap-2 mt-1">
-                                       <span className="text-[10px] font-mono text-zinc-600 uppercase">{chainId === SUPPORTED_CHAINS.POLYGON ? 'Polygon POS' : 'Amoy Node'}</span>
+                                       <span className="text-[10px] font-mono text-zinc-600 uppercase">{chainId === SUPPORTED_CHAINS.BASE ? 'Base Mainnet' : 'Base Sepolia'}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -755,7 +755,7 @@ export function Dashboard() {
                                   </div>
                                </div>
                                <a 
-                                  href={isPolygon ? `https://polygonscan.com/address/${addr}` : `https://amoy.polygonscan.com/address/${addr}`}
+                                  href={isBase ? `https://basescan.org/address/${addr}` : `https://sepolia.basescan.org/address/${addr}`}
                                   target="_blank"
                                   rel="noreferrer"
                                   className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-700 hover:text-white transition-all shadow-inner hover:shadow-emerald-500/5 hover:-translate-y-1"
@@ -1001,7 +1001,7 @@ export function Dashboard() {
               </div>
               <div className="text-right">
                  <p className="text-[10px] font-black text-zinc-800 uppercase mb-3 tracking-widest">Native Mesh</p>
-                 <p className="text-lg font-mono font-black text-zinc-500 italic uppercase tracking-tight">Polygon_Ecosystem</p>
+                 <p className="text-lg font-mono font-black text-zinc-500 italic uppercase tracking-tight">Base_Ecosystem</p>
               </div>
            </div>
         </footer>
@@ -1015,4 +1015,3 @@ export function Dashboard() {
 }
 
 // Technical decoration removed
-
