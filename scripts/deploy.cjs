@@ -8,25 +8,29 @@ async function main() {
 
   console.log("Deploying contracts with the account:", deployer.address);
   const balance = await deployer.provider.getBalance(deployer.address);
-  console.log("Account balance:", hre.ethers.formatEther(balance), "POL");
+  console.log("Account balance:", hre.ethers.formatEther(balance), "ETH");
 
   const network = await hre.ethers.provider.getNetwork();
   const chainId = network.chainId;
   console.log("Current Chain ID:", chainId.toString());
 
-  const isMainnet = chainId === 137n;
+  const isMainnet = chainId === 8453n;
+  const isBaseSepolia = chainId === 84532n;
+  if (!isMainnet && !isBaseSepolia) {
+    throw new Error(`Unsupported network chainId=${chainId.toString()}. Use Base (8453) or Base Sepolia (84532).`);
+  }
   
   // Aave V3 Pool addresses
-  // Polygon Mainnet: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
-  // Amoy: Using Mock if not specified
+  // Base Mainnet: 0xA238Dd80C259a72e81d7e4664a9801593F98d1c5
+  // Base Sepolia: from env if available, else mock
   let aavePoolAddress = isMainnet 
-    ? "0x794a61358D6845594F94dc1DB02A252b5b4814aD" 
+    ? "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5" 
     : (process.env.AAVE_POOL_ADDRESS || "");
 
   // Chainlink Sequencer Uptime Feeds
-  // Polygon Mainnet: 0x491B1dCdB7f4339e3Aa2C6909403B550798C5d71
+  // Base networks: disabled by default unless explicitly provided
   const sequencerFeed = isMainnet
-    ? "0x491B1dCdB7f4339e3Aa2C6909403B550798C5d71"
+    ? (process.env.BASE_SEQUENCER_FEED || "0x0000000000000000000000000000000000000000")
     : "0x0000000000000000000000000000000000000000";
 
   // 1. SentinelTreasury
@@ -66,7 +70,7 @@ async function main() {
           aavePoolAddress = await mockPool.getAddress();
           console.log("MockAavePool deployed to:", aavePoolAddress);
       } catch (e) {
-          aavePoolAddress = "0x6Ae43d534924A6D5c4a796644C4476082c5f102B";
+          aavePoolAddress = "0x0000000000000000000000000000000000000000";
           console.log("Using fallback Aave Pool address:", aavePoolAddress);
       }
   }
@@ -92,7 +96,7 @@ async function main() {
   console.log("Granted DEPLOYER_ROLE");
 
   console.log("\n--- DEPLOYMENT COMPLETE ---");
-  const prefix = isMainnet ? "VITE_POLYGON_" : "VITE_AMOY_";
+  const prefix = isMainnet ? "VITE_BASE_" : "VITE_BASE_SEPOLIA_";
   console.log(`${prefix}TREASURY_ADDRESS=${treasuryAddress}`);
   console.log(`${prefix}ORACLE_ADDRESS=${oracleAddress}`);
   console.log(`${prefix}FACTORY_ADDRESS=${factoryAddress}`);
@@ -100,7 +104,7 @@ async function main() {
   
   // Try to setup initial vault on Testnet
   if (!isMainnet) {
-    console.log("\nSetting up initial vault on Amoy...");
+    console.log("\nSetting up initial vault on Base Sepolia...");
     try {
         const MockToken = await hre.ethers.getContractFactory("ERC20Mock");
         const mockToken = await MockToken.deploy("USD Coin", "USDC", deployer.address, hre.ethers.parseUnits("1000000", 6));
