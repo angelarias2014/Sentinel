@@ -331,6 +331,181 @@ flowchart LR
 
 ---
 
+## 🧠 Arquitectura Avanzada: diseño por dominios y bounded contexts
+
+Para equipos de producto/ingeniería grandes, Sentinel puede modelarse con dominios independientes:
+
+1. **Risk Intelligence Domain**
+   - Inputs: métricas on-chain, eventos de protocolo, señales externas.
+   - Output: score + explicación + confianza.
+   - SLO sugerido: latencia de inferencia < 3s p95.
+
+2. **Vault Execution Domain**
+   - Inputs: depósitos, retiros, score de riesgo, límites operativos.
+   - Output: asignación/desasignación de capital, cobro de fees, eventos on-chain.
+   - SLO sugerido: operaciones críticas con confirmación dentro de 1 bloque objetivo.
+
+3. **Treasury & Accounting Domain**
+   - Inputs: fees por operación, ganancias/pérdidas por estrategia.
+   - Output: estado contable, acumulación de tesorería, reconciliación de balances.
+
+4. **Governance & Access Domain**
+   - Inputs: altas/bajas de roles, parámetros del sistema, upgrades de adapters.
+   - Output: cambios autorizados con trazabilidad y control de blast radius.
+
+### Patrón de integración recomendado
+- **Command/Query separation**:
+  - Query: lecturas de estado (`riskScore`, `totalAssets`, `balanceOf`).
+  - Command: operaciones mutables (`deposit`, `withdraw`, `safeWithdraw`).
+- **Outbox/Event-sourcing parcial**:
+  - registrar eventos críticos para analytics, forensics y postmortems.
+- **Circuit breakers**:
+  - deshabilitar estrategias específicas por adapter sin pausar todo el protocolo.
+
+---
+
+## 🔐 Threat Model y controles de seguridad avanzados
+
+### Superficies de ataque principales
+1. **Manipulación de oráculo/riesgo**  
+   Mitigación: roles restringidos, fuentes redundantes, control de frecuencia de updates.
+
+2. **Riesgo de integración en adapters**  
+   Mitigación: allowlist de protocolos, límites por estrategia, pruebas con mocks maliciosos.
+
+3. **Riesgo de liquidez extrema**  
+   Mitigación: Emergency Shield, límites de exposición por activo, rebalanceos por tramos.
+
+4. **Riesgo de claves operativas**  
+   Mitigación: HSM/MPC, rotación de keys, runbooks de incident response.
+
+### Controles recomendados por fase
+
+| Fase | Control | Objetivo |
+| :--- | :--- | :--- |
+| Pre-deploy | Auditoría + fuzzing | Reducir bugs críticos y edge cases |
+| Deploy | Checklists + 4-eyes | Evitar errores humanos de configuración |
+| Operación | Alertas + SLOs + runbooks | Respuesta rápida ante anomalías |
+| Incidente | Kill-switch de estrategia | Contención de pérdidas |
+
+---
+
+## 📈 Observabilidad, métricas y alerting (producción)
+
+### KPIs on-chain
+- TVL por vault, activo y red.
+- Utilización por adapter.
+- Drawdown por ventana temporal (1h/24h/7d).
+- Ratio de activación de Emergency Shield.
+
+### KPIs de riesgo AI
+- Distribución de scores por protocolo.
+- Score drift (variación anómala por unidad de tiempo).
+- Tasa de falsos positivos / falsos negativos (si existe etiquetado posterior).
+
+### Alertas mínimas recomendadas
+- `risk_score >= threshold_critical`
+- `withdraw failure rate > X% en Y minutos`
+- `oracle update stale > N minutos`
+- `adapter exposure > límite configurado`
+
+### Stack sugerido
+- Logs estructurados (JSON), trazas por correlación de txHash.
+- Dashboard en Grafana/Datadog/New Relic.
+- Alertas a Slack/PagerDuty/Telegram.
+
+---
+
+## 🧪 Estrategia de pruebas avanzada
+
+### 1) Unit tests (Solidity + TS)
+- Cobertura funcional de rutas felices y errores esperados.
+- Validaciones de roles, límites y cálculos de shares.
+
+### 2) Integration tests
+- Flujo completo `deposit -> strategy allocate -> risk trigger -> shield -> withdraw`.
+- Validar que el treasury recibe fees correctas.
+
+### 3) Security tests
+- Reentrancy attempts, malicious token behavior, allowance edge cases.
+- Simulación de oracle spoofing y condiciones de data stale.
+
+### 4) Property-based / fuzz
+- Invariantes:
+  - `totalAssets >= sum(userClaims)` en condiciones nominales.
+  - no mint/burn inválido de shares.
+  - límites de exposición nunca excedidos.
+
+### 5) Chaos / Game days
+- RPC intermitente.
+- Delay de actualizaciones de riesgo.
+- Falta de liquidez temporal en protocolo externo.
+
+---
+
+## 🧰 Runbooks operativos (SRE + DeFi Ops)
+
+### Runbook A: Score crítico sostenido
+1. Validar señal (fuente + timestamp + consistencia inter-feed).
+2. Congelar nuevas asignaciones en adapter afectado.
+3. Ejecutar retirada defensiva controlada.
+4. Confirmar balances en vault + treasury.
+5. Comunicar estado a usuarios y abrir seguimiento post-incident.
+
+### Runbook B: Oracle desactualizado
+1. Detectar stale data y activar alerta severidad alta.
+2. Fallback a modo conservador (no nuevas asignaciones).
+3. Recuperar canal de actualización (infra/API).
+4. Revalidar score antes de reanudar operaciones.
+
+### Runbook C: Degradación de red Base
+1. Reducir throughput de operaciones no críticas.
+2. Priorizar retiros y operaciones de protección.
+3. Aplicar timeouts/retries con backoff.
+4. Publicar status page y ETA de normalización.
+
+---
+
+## 🧩 Guía de extensibilidad para nuevos adapters/protocolos
+
+### Requisitos de diseño
+- Implementar `IYieldAdapter`.
+- Exponer métodos idempotentes para deposit/withdraw.
+- Manejar escenarios de slippage, partial fills y fallback.
+
+### Checklist de incorporación
+1. Especificación técnica del protocolo (riesgos, límites, garantías).
+2. Implementación adapter + pruebas unitarias/integración.
+3. Simulación de stress y escenarios adversos.
+4. Revisión de seguridad + auditoría interna.
+5. Activación progresiva por etapas (canary rollout).
+
+### Estrategia canary sugerida
+- Semana 1: 1-5% TVL en el nuevo adapter.
+- Semana 2: 10-20% si no hay alertas críticas.
+- Semana 3+: escalado por política de riesgo.
+
+---
+
+## 🗺️ Roadmap técnico sugerido
+
+### Corto plazo (0-4 semanas)
+- Hardening de validaciones de config por entorno.
+- Dashboards operativos con alertas accionables.
+- Pruebas de regresión automáticas en CI.
+
+### Mediano plazo (1-3 meses)
+- Multi-oracle consensus con ponderación de fuentes.
+- Policy engine configurable por vault/activo.
+- Rebalanceador dinámico basado en riesgo + liquidez.
+
+### Largo plazo (3-12 meses)
+- Soporte multi-chain adicional.
+- Riesgo probabilístico con modelos ensemble.
+- Estrategias institucionales con límites por mandato.
+
+---
+
 ## 🛡️ Seguridad
 Sentinel Vault ha sido diseñado bajo los principios de **Trustless AI**:
 -   Las actualizaciones de riesgo están firmadas.
