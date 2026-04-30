@@ -3,6 +3,21 @@ export const SUPPORTED_CHAINS = {
   BASE_SEPOLIA: 84532
 } as const;
 
+export const CHAIN_METADATA = {
+  [SUPPORTED_CHAINS.BASE]: {
+    id: SUPPORTED_CHAINS.BASE,
+    key: "base",
+    name: "Base Mainnet",
+    shortName: "Base",
+  },
+  [SUPPORTED_CHAINS.BASE_SEPOLIA]: {
+    id: SUPPORTED_CHAINS.BASE_SEPOLIA,
+    key: "baseSepolia",
+    name: "Base Sepolia",
+    shortName: "Base Sepolia",
+  },
+} as const;
+
 export const ASSETS = {
   [SUPPORTED_CHAINS.BASE]: [
     { symbol: "USDC", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", decimals: 6, vaultAddress: import.meta.env.VITE_BASE_VAULT_ADDRESS || "0x0000000000000000000000000000000000000000" },

@@ -16,7 +16,7 @@ En el panorama DeFi actual, los riesgos de mercado (desanclaje de stablecoins, e
 -   **AI Risk Oracle**: Motor basado en Gemini 1.5 que procesa feeds de datos y emite scores de riesgo (0-100).
 -   **Automated Emergency Shield**: Si el riesgo > 80, el contrato retira automáticamente los activos del yield-source y los resguarda en el Vault.
 -   **Multi-Asset Treasury**: Gestión centralizada de yields y fees para sostenibilidad del protocolo.
--   **Dashboard en Tiempo Real**: Visualización de métricas de riesgo, balances y estado de la red Base Sepolia.
+-   **Dashboard Multi-Red (Base)**: Visualización de métricas de riesgo, balances y estado en **Base Mainnet** y **Base Sepolia**.
 -   **Gas Optimized**: Contratos escritos con patrones de optimización de gas (Custom Errors, slot packing).
 
 ---
@@ -33,7 +33,7 @@ En el panorama DeFi actual, los riesgos de mercado (desanclaje de stablecoins, e
 
 ### 1. Requisitos Técnicos
 -   **Node.js**: v18.0.0 o superior.
--   **Wallet**: Metamask o similar con configuración para **Base Sepolia**.
+-   **Wallet**: Metamask o similar con configuración para **Base Mainnet** y/o **Base Sepolia**.
 -   **Faucet**: Obtén tokens de prueba en [Base Faucet](https://www.coinbase.com/faucets/base-ethereum-sepolia-faucet).
 
 ### 2. Instalación
@@ -81,6 +81,12 @@ npm run start
 
 # Preview del build de Vite
 npm run preview
+
+# Deploy de contratos en Base Sepolia
+npx hardhat run scripts/deploy.ts --network baseSepolia
+
+# Deploy de contratos en Base Mainnet
+npx hardhat run scripts/deploy.ts --network base
 ```
 
 ---
