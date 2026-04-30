@@ -4,7 +4,7 @@
 
 ---
 
-## 🌟 Vision y Propósito
+## 🌟 Visión y Propósito
 En el panorama DeFi actual, los riesgos de mercado (desanclaje de stablecoins, exploits de liquidez, caídas del 99%) ocurren en minutos. Los modelos de riesgo tradicionales son estáticos. **Sentinel Vault** introduce una capa reactiva que:
 1.  **Analiza** datos del mercado en tiempo real mediante IA.
 2.  **Anticipa** crisis antes de que afecten el capital.
@@ -40,7 +40,7 @@ En el panorama DeFi actual, los riesgos de mercado (desanclaje de stablecoins, e
 ```bash
 # Clonar repositorio
 git clone <repo-url>
-cd sentinel-vault
+cd Sentinel
 
 # Instalar dependencias
 npm install
@@ -67,6 +67,21 @@ VITE_WALLETCONNECT_PROJECT_ID=""
 npm run dev
 ```
 La aplicación estará disponible en `http://localhost:3000`.
+
+### 5. Scripts útiles
+```bash
+# Desarrollo (frontend + API Express)
+npm run dev
+
+# Build de frontend + verificación de tipos TypeScript
+npm run build
+
+# Ejecutar en modo producción
+npm run start
+
+# Preview del build de Vite
+npm run preview
+```
 
 ---
 
