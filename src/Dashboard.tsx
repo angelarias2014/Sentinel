@@ -6,7 +6,7 @@ import {
   Globe, Database, Cpu, TrendingUp, Info, Activity,
   Zap, Lock, AlertCircle, Terminal, Binary
 } from "lucide-react";
-import { ASSETS, PROTOCOLS, VAULT_SYSTEM, SUPPORTED_CHAINS } from "./lib/constants";
+import { ASSETS, CHAIN_METADATA, PROTOCOLS, VAULT_SYSTEM, SUPPORTED_CHAINS } from "./lib/constants";
 import { ERC20_ABI, SENTINEL_VAULT_ABI } from "./lib/abis";
 import { formatUnits, parseUnits, parseAbi } from "viem";
 import { analyzeProtocolRisk } from "./lib/GeminiService";
@@ -30,6 +30,7 @@ export function Dashboard() {
   
   const isBase = chainId === SUPPORTED_CHAINS.BASE;
   const isBaseSepolia = chainId === SUPPORTED_CHAINS.BASE_SEPOLIA;
+  const activeChain = CHAIN_METADATA[chainId as keyof typeof CHAIN_METADATA];
   
   const assets = useMemo(() => ASSETS[chainId as keyof typeof ASSETS] || ASSETS[SUPPORTED_CHAINS.BASE], [chainId]);
   const protocols = useMemo(() => PROTOCOLS[chainId as keyof typeof PROTOCOLS] || PROTOCOLS[SUPPORTED_CHAINS.BASE], [chainId]);
@@ -215,7 +216,7 @@ export function Dashboard() {
     // In a full implementation, we'd fetch the Aave Pool health factor for the specific user here.
     const context = {
       name: protocolName,
-      network: isBase ? "Base Mainnet" : "Base Sepolia",
+      network: activeChain?.name ?? "Base Network",
       tvl: `$${totalValueSecured.toLocaleString()} (Vault Stats)`,
       volume: "Syncing live feed...",
       healthFactor: "DYNAMIC_MONITORING", 
@@ -226,7 +227,7 @@ export function Dashboard() {
     setAiScores(prev => ({ ...prev, [protocolName]: { score: res.score, justification: res.justification, analyzing: false } }));
   };
 
-  const currentChainName = isBase ? "Base Mainnet" : isBaseSepolia ? "Base Sepolia" : "Connected";
+  const currentChainName = activeChain?.name ?? "Connected";
 
   return (
     <div className="min-h-screen bg-zinc-950 technical-grid text-white font-sans selection:bg-emerald-500/30 selection:text-emerald-200 antialiased overflow-x-hidden">
@@ -285,10 +286,7 @@ export function Dashboard() {
                     exit={{ opacity: 0, y: 15, scale: 0.95 }}
                     className="absolute top-16 right-0 w-64 bg-[#0A0A0A] border border-zinc-800 rounded-3xl shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden z-50 p-2 border-t-emerald-500/40"
                   >
-                    {[
-                      { id: SUPPORTED_CHAINS.BASE, name: 'Base Mainnet' },
-                      { id: SUPPORTED_CHAINS.BASE_SEPOLIA, name: 'Base Sepolia' }
-                    ].map(chain => (
+                    {Object.values(CHAIN_METADATA).map(chain => (
                       <button
                         key={chain.id}
                         onClick={() => {
@@ -354,7 +352,7 @@ export function Dashboard() {
              </div>
              <div className="text-right">
                 <p className="text-[9px] font-mono text-zinc-700 uppercase tracking-tighter">Treasury Reserve</p>
-                <p className="text-xs font-mono font-black text-zinc-500 underline decoration-zinc-800 cursor-pointer">{system.TREASURY.slice(0, 16)}...</p>
+                <p className="text-xs font-mono font-black text-zinc-500 underline decoration-zinc-800 cursor-pointer">{(system.TREASURY ?? "0x").slice(0, 16)}...</p>
              </div>
           </div>
         </div>
@@ -543,7 +541,7 @@ export function Dashboard() {
                           <div className="mt-4 flex items-center gap-6 relative z-10">
                              <div className="flex flex-col">
                                 <span className="text-[9px] font-black text-zinc-700 uppercase">Vault Instance</span>
-                                <span className="text-xs font-mono font-bold text-zinc-500 underline decoration-zinc-800">{system.VAULT.slice(0, 16)}...</span>
+                                <span className="text-xs font-mono font-bold text-zinc-500 underline decoration-zinc-800">{(system.VAULT ?? "0x").slice(0, 16)}...</span>
                              </div>
                              <div className="w-1 h-8 bg-zinc-800" />
                              <div className="flex flex-col">

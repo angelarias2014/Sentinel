@@ -16,7 +16,7 @@ En el panorama DeFi actual, los riesgos de mercado (desanclaje de stablecoins, e
 -   **AI Risk Oracle**: Motor basado en Gemini 1.5 que procesa feeds de datos y emite scores de riesgo (0-100).
 -   **Automated Emergency Shield**: Si el riesgo > 80, el contrato retira automáticamente los activos del yield-source y los resguarda en el Vault.
 -   **Multi-Asset Treasury**: Gestión centralizada de yields y fees para sostenibilidad del protocolo.
--   **Dashboard en Tiempo Real**: Visualización de métricas de riesgo, balances y estado de la red Base Sepolia.
+-   **Dashboard Multi-Red (Base)**: Visualización de métricas de riesgo, balances y estado en **Base Mainnet** y **Base Sepolia**.
 -   **Gas Optimized**: Contratos escritos con patrones de optimización de gas (Custom Errors, slot packing).
 
 ---
@@ -33,7 +33,7 @@ En el panorama DeFi actual, los riesgos de mercado (desanclaje de stablecoins, e
 
 ### 1. Requisitos Técnicos
 -   **Node.js**: v18.0.0 o superior.
--   **Wallet**: Metamask o similar con configuración para **Base Sepolia**.
+-   **Wallet**: Metamask o similar con configuración para **Base Mainnet** y/o **Base Sepolia**.
 -   **Faucet**: Obtén tokens de prueba en [Base Faucet](https://www.coinbase.com/faucets/base-ethereum-sepolia-faucet).
 
 ### 2. Instalación
@@ -81,6 +81,12 @@ npm run start
 
 # Preview del build de Vite
 npm run preview
+
+# Deploy de contratos en Base Sepolia
+npx hardhat run scripts/deploy.ts --network baseSepolia
+
+# Deploy de contratos en Base Mainnet
+npx hardhat run scripts/deploy.ts --network base
 ```
 
 ---
@@ -112,6 +118,12 @@ Este es el paso más crítico. En la pestaña **Environment Variables**, añade:
 | `VITE_BASE_AERODROME_ROUTER` | Dirección de Aerodrome Router (Base) | `0x...` |
 | `VITE_BASE_MOONWELL_COMPTROLLER` | Dirección de Moonwell Comptroller (Base) | `0x...` |
 | `VITE_BASE_MORPHO` | Dirección de Morpho (Base) | `0x...` |
+| `VITE_BASE_VAULT_ADDRESS` | Dirección real del Vault en Base | `0x...` |
+| `VITE_BASE_TREASURY_ADDRESS` | Dirección real del Treasury en Base | `0x...` |
+| `VITE_BASE_FACTORY_ADDRESS` | Dirección real del Factory en Base | `0x...` |
+| `VITE_BASE_ORACLE_ADDRESS` | Dirección real del Oracle en Base | `0x...` |
+| `VITE_BASE_SEPOLIA_VAULT_ADDRESS` | Dirección real del Vault en Base Sepolia | `0x...` |
+| `VITE_BASE_SEPOLIA_AAVE_V3_POOL` | Dirección real de Aave V3 Pool en Base Sepolia | `0x...` |
 
 **Nota**: Las variables que empiezan por `VITE_` son accesibles desde el navegador. La `GEMINI_API_KEY` **NUNCA** debe llevar el prefijo `VITE_` para mantenerse segura en el servidor.
 
@@ -324,6 +336,360 @@ Esta práctica simplifica soporte, postmortems y auditorías.
 ├── arquitectura.md     # Documentación técnica profunda
 └── vercel.json         # Configuración para despliegue en la nube
 ```
+
+---
+
+## 🧭 Arquitectura Técnica (End-to-End)
+
+Sentinel se organiza en 4 capas:
+
+1. **Capa de Usuario (Frontend React + Wagmi)**  
+   Maneja conexión wallet, lectura de balances, depósitos/retiros, visualización de riesgo y switching Base/Base Sepolia.
+
+2. **Capa de Orquestación (Backend Express + Gemini)**  
+   Recibe contexto de mercado/protocolo, consulta Gemini y genera señales de riesgo estructuradas para consumo on-chain.
+
+3. **Capa de Ejecución On-Chain (Contratos Solidity)**  
+   Vaults, factory, treasury, oráculo y adapters ejecutan reglas de seguridad, custodia y estrategias.
+
+4. **Capa de Liquidez Externa (Aave/DEX/otros protocolos)**  
+   Los adapters conectan con protocolos de rendimiento para asignar capital con control de riesgo.
+
+### Diagrama lógico (alto nivel)
+
+```mermaid
+flowchart LR
+  U[Usuario] --> D[Dashboard React]
+  D --> W[Wagmi/Viem]
+  W --> V[SentinelVault]
+  V --> T[Treasury]
+  V --> O[SentinelChainlinkOracle]
+  F[VaultFactory] --> V
+  V --> A[Yield Adapter]
+  A --> P[(Aave / DEX / Lending)]
+  B[Backend Express] --> G[Gemini]
+  G --> B
+  B --> O
+```
+
+### Flujograma operativo de riesgo
+
+```mermaid
+flowchart TD
+  S[Start ciclo de monitoreo] --> C[Recolectar contexto de mercado]
+  C --> AI[Analizar con Gemini]
+  AI --> R{Risk score > threshold?}
+  R -- No --> N[Continuar operación normal]
+  R -- Sí --> E[Activar Emergency Shield]
+  E --> W1[Desasignar de protocolo externo]
+  W1 --> V1[Resguardar fondos en Vault]
+  V1 --> A1[Emitir eventos + actualizar UI]
+  A1 --> END[Fin ciclo]
+  N --> END
+```
+
+---
+
+## 📜 Contratos Inteligentes: detalle y relaciones
+
+### 1) `SentinelVault.sol`
+- Contrato principal de custodia y operaciones de usuario (deposit/withdraw).
+- Integra lógica de riesgo y modo de protección (Emergency Shield).
+- Interactúa con:
+  - `IYieldAdapter` para estrategia externa.
+  - `SentinelChainlinkOracle` para score de riesgo.
+  - `SentinelTreasury` para gestión de fees.
+
+### 2) `SentinelVaultERC4626.sol`
+- Variante/implementación bajo estándar ERC-4626 para vault tokens.
+- Estandariza accounting de shares/assets y compatibilidad con tooling DeFi.
+
+### 3) `SentinelVaultFactory.sol`
+- Fábrica para desplegar/configurar nuevas instancias de Vault.
+- Controla permisos administrativos y parametrización inicial por activo.
+
+### 4) `SentinelTreasury.sol`
+- Acumula y administra comisiones del sistema.
+- Permite separación entre lógica de usuario y caja del protocolo.
+
+### 5) `SentinelChainlinkOracle.sol`
+- Punto on-chain para publicar/leer riesgo agregado.
+- Soporta control de roles para evitar escritura no autorizada.
+- Se integra con backend/oracle operators para actualizaciones periódicas.
+
+### 6) Adapters de rendimiento
+- `AaveV3Adapter.sol`
+- `UniswapV3Adapter.sol`
+- `QuickswapV3Adapter.sol`
+- `BalancerV2Adapter.sol`
+
+Estos contratos abstraen diferencias entre protocolos externos para que el Vault use una interfaz uniforme (`IYieldAdapter.sol`).
+
+### 7) Interfaces y mocks
+- `ISentinelOracle.sol`, `IYieldAdapter.sol` para desacoplar implementación/consumo.
+- Mocks en `contracts/mocks/` para pruebas de seguridad, edge cases y escenarios adversos.
+
+### Relaciones contractuales (resumen)
+
+```mermaid
+flowchart LR
+  Factory[SentinelVaultFactory] --> Vault[SentinelVault]
+  Vault --> Treasury[SentinelTreasury]
+  Vault --> Oracle[SentinelChainlinkOracle]
+  Vault --> Adapter[IYieldAdapter]
+  Adapter --> External[(Aave / AMM / Lending)]
+```
+
+---
+
+## 🚀 Despliegue paso a paso (muy detallado)
+
+### A. Preparación local
+1. Clona repo e instala dependencias.
+2. Define `.env` completo con todas las direcciones requeridas (sin `0x000...`).
+3. Verifica que `DEPLOYER_PRIVATE_KEY` tenga permisos/fondos en la red objetivo.
+4. Confirma RPCs:
+   - `VITE_BASE_RPC_URL`
+   - `VITE_BASE_SEPOLIA_RPC_URL`
+
+### B. Checklist previo a deploy
+1. Compila contratos:
+   ```bash
+   npx hardhat compile
+   ```
+2. Corre tests (recomendado):
+   ```bash
+   npx hardhat test
+   ```
+3. Ejecuta build frontend para validar tipado/config:
+   ```bash
+   npm run build
+   ```
+
+### C. Deploy en Base Sepolia
+1. Configura variables específicas de testnet (`VITE_BASE_SEPOLIA_*`, `BASE_SEPOLIA_AAVE_V3_POOL`).
+2. Ejecuta:
+   ```bash
+   npx hardhat run scripts/deploy.ts --network baseSepolia
+   ```
+3. Guarda el output (`ORACLE=`, `TREASURY=`, `FACTORY=` y `DEFAULT_ADAPTER=`).
+4. Actualiza variables frontend/backend con esas direcciones.
+5. Haz smoke test funcional:
+   - conectar wallet,
+   - approve token,
+   - deposit pequeño,
+   - retiro parcial.
+
+### D. Deploy en Base Mainnet
+1. Repite el proceso con `VITE_BASE_*` y `BASE_AAVE_V3_POOL`.
+2. Ejecuta:
+   ```bash
+   npx hardhat run scripts/deploy.ts --network base
+   ```
+3. Aplica control de cambios:
+   - registro de direcciones finales,
+   - validación de ownership/roles,
+   - verificación de contratos en explorador.
+
+### E. Post-deploy (operación)
+1. Configura jobs del oracle operator (frecuencia, alertas, fallback).
+2. Define umbrales de riesgo y runbooks de emergencia.
+3. Monitorea:
+   - eventos de activación de shield,
+   - crecimiento de TVL,
+   - latencia de actualización de riesgo.
+
+---
+
+## 🌍 Ejemplo de uso real (caso práctico)
+
+**Escenario:** una DAO mantiene tesorería operativa en USDC/WETH y desea rendimiento sin exponerse a eventos extremos.
+
+1. La DAO deposita capital en un Vault de Sentinel.
+2. El Vault asigna parte del capital a un protocolo de rendimiento vía adapter.
+3. El backend analiza continuamente señales de mercado y salud del protocolo.
+4. Si el score de riesgo supera el umbral (ej. >80):
+   - el Vault ejecuta retirada defensiva (Emergency Shield),
+   - los fondos se mantienen en custodia segura dentro del vault,
+   - la DAO mantiene capacidad de retiro.
+5. Cuando el riesgo vuelve a rango saludable, la estrategia puede reactivarse bajo gobernanza/política interna.
+
+**Resultado esperado:** mejor balance entre generación de yield y preservación de capital ante shocks de mercado.
+
+---
+
+## 🧠 Arquitectura Avanzada: diseño por dominios y bounded contexts
+
+Para equipos de producto/ingeniería grandes, Sentinel puede modelarse con dominios independientes:
+
+1. **Risk Intelligence Domain**
+   - Inputs: métricas on-chain, eventos de protocolo, señales externas.
+   - Output: score + explicación + confianza.
+   - SLO sugerido: latencia de inferencia < 3s p95.
+
+2. **Vault Execution Domain**
+   - Inputs: depósitos, retiros, score de riesgo, límites operativos.
+   - Output: asignación/desasignación de capital, cobro de fees, eventos on-chain.
+   - SLO sugerido: operaciones críticas con confirmación dentro de 1 bloque objetivo.
+
+3. **Treasury & Accounting Domain**
+   - Inputs: fees por operación, ganancias/pérdidas por estrategia.
+   - Output: estado contable, acumulación de tesorería, reconciliación de balances.
+
+4. **Governance & Access Domain**
+   - Inputs: altas/bajas de roles, parámetros del sistema, upgrades de adapters.
+   - Output: cambios autorizados con trazabilidad y control de blast radius.
+
+### Patrón de integración recomendado
+- **Command/Query separation**:
+  - Query: lecturas de estado (`riskScore`, `totalAssets`, `balanceOf`).
+  - Command: operaciones mutables (`deposit`, `withdraw`, `safeWithdraw`).
+- **Outbox/Event-sourcing parcial**:
+  - registrar eventos críticos para analytics, forensics y postmortems.
+- **Circuit breakers**:
+  - deshabilitar estrategias específicas por adapter sin pausar todo el protocolo.
+
+---
+
+## 🔐 Threat Model y controles de seguridad avanzados
+
+### Superficies de ataque principales
+1. **Manipulación de oráculo/riesgo**  
+   Mitigación: roles restringidos, fuentes redundantes, control de frecuencia de updates.
+
+2. **Riesgo de integración en adapters**  
+   Mitigación: allowlist de protocolos, límites por estrategia, pruebas con mocks maliciosos.
+
+3. **Riesgo de liquidez extrema**  
+   Mitigación: Emergency Shield, límites de exposición por activo, rebalanceos por tramos.
+
+4. **Riesgo de claves operativas**  
+   Mitigación: HSM/MPC, rotación de keys, runbooks de incident response.
+
+### Controles recomendados por fase
+
+| Fase | Control | Objetivo |
+| :--- | :--- | :--- |
+| Pre-deploy | Auditoría + fuzzing | Reducir bugs críticos y edge cases |
+| Deploy | Checklists + 4-eyes | Evitar errores humanos de configuración |
+| Operación | Alertas + SLOs + runbooks | Respuesta rápida ante anomalías |
+| Incidente | Kill-switch de estrategia | Contención de pérdidas |
+
+---
+
+## 📈 Observabilidad, métricas y alerting (producción)
+
+### KPIs on-chain
+- TVL por vault, activo y red.
+- Utilización por adapter.
+- Drawdown por ventana temporal (1h/24h/7d).
+- Ratio de activación de Emergency Shield.
+
+### KPIs de riesgo AI
+- Distribución de scores por protocolo.
+- Score drift (variación anómala por unidad de tiempo).
+- Tasa de falsos positivos / falsos negativos (si existe etiquetado posterior).
+
+### Alertas mínimas recomendadas
+- `risk_score >= threshold_critical`
+- `withdraw failure rate > X% en Y minutos`
+- `oracle update stale > N minutos`
+- `adapter exposure > límite configurado`
+
+### Stack sugerido
+- Logs estructurados (JSON), trazas por correlación de txHash.
+- Dashboard en Grafana/Datadog/New Relic.
+- Alertas a Slack/PagerDuty/Telegram.
+
+---
+
+## 🧪 Estrategia de pruebas avanzada
+
+### 1) Unit tests (Solidity + TS)
+- Cobertura funcional de rutas felices y errores esperados.
+- Validaciones de roles, límites y cálculos de shares.
+
+### 2) Integration tests
+- Flujo completo `deposit -> strategy allocate -> risk trigger -> shield -> withdraw`.
+- Validar que el treasury recibe fees correctas.
+
+### 3) Security tests
+- Reentrancy attempts, malicious token behavior, allowance edge cases.
+- Simulación de oracle spoofing y condiciones de data stale.
+
+### 4) Property-based / fuzz
+- Invariantes:
+  - `totalAssets >= sum(userClaims)` en condiciones nominales.
+  - no mint/burn inválido de shares.
+  - límites de exposición nunca excedidos.
+
+### 5) Chaos / Game days
+- RPC intermitente.
+- Delay de actualizaciones de riesgo.
+- Falta de liquidez temporal en protocolo externo.
+
+---
+
+## 🧰 Runbooks operativos (SRE + DeFi Ops)
+
+### Runbook A: Score crítico sostenido
+1. Validar señal (fuente + timestamp + consistencia inter-feed).
+2. Congelar nuevas asignaciones en adapter afectado.
+3. Ejecutar retirada defensiva controlada.
+4. Confirmar balances en vault + treasury.
+5. Comunicar estado a usuarios y abrir seguimiento post-incident.
+
+### Runbook B: Oracle desactualizado
+1. Detectar stale data y activar alerta severidad alta.
+2. Fallback a modo conservador (no nuevas asignaciones).
+3. Recuperar canal de actualización (infra/API).
+4. Revalidar score antes de reanudar operaciones.
+
+### Runbook C: Degradación de red Base
+1. Reducir throughput de operaciones no críticas.
+2. Priorizar retiros y operaciones de protección.
+3. Aplicar timeouts/retries con backoff.
+4. Publicar status page y ETA de normalización.
+
+---
+
+## 🧩 Guía de extensibilidad para nuevos adapters/protocolos
+
+### Requisitos de diseño
+- Implementar `IYieldAdapter`.
+- Exponer métodos idempotentes para deposit/withdraw.
+- Manejar escenarios de slippage, partial fills y fallback.
+
+### Checklist de incorporación
+1. Especificación técnica del protocolo (riesgos, límites, garantías).
+2. Implementación adapter + pruebas unitarias/integración.
+3. Simulación de stress y escenarios adversos.
+4. Revisión de seguridad + auditoría interna.
+5. Activación progresiva por etapas (canary rollout).
+
+### Estrategia canary sugerida
+- Semana 1: 1-5% TVL en el nuevo adapter.
+- Semana 2: 10-20% si no hay alertas críticas.
+- Semana 3+: escalado por política de riesgo.
+
+---
+
+## 🗺️ Roadmap técnico sugerido
+
+### Corto plazo (0-4 semanas)
+- Hardening de validaciones de config por entorno.
+- Dashboards operativos con alertas accionables.
+- Pruebas de regresión automáticas en CI.
+
+### Mediano plazo (1-3 meses)
+- Multi-oracle consensus con ponderación de fuentes.
+- Policy engine configurable por vault/activo.
+- Rebalanceador dinámico basado en riesgo + liquidez.
+
+### Largo plazo (3-12 meses)
+- Soporte multi-chain adicional.
+- Riesgo probabilístico con modelos ensemble.
+- Estrategias institucionales con límites por mandato.
 
 ---
 
