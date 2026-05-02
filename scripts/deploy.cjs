@@ -117,7 +117,8 @@ async function main() {
   const factory = await Factory.deploy(aaveAdapterAddress, treasuryAddress, oracleAddress, deployer.address);
   await factory.waitForDeployment();
   const factoryAddress = await factory.getAddress();
-  console.log("SentinelVaultFactory deployed to:", factoryAddress);
+  console.log("SentinelVaultFactory deployed to:", factoryAddress); console.log("Esperando confirmación de bloques...");
+  await factory.deploymentTransaction().wait(5); // Espera 5 confirmaciones de bloque
 
   const DEPLOYER_ROLE = await factory.DEPLOYER_ROLE();
   await (await factory.grantRole(DEPLOYER_ROLE, deployer.address)).wait();
