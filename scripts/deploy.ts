@@ -1,7 +1,25 @@
 import hre from "hardhat";
 
+const DEPLOYMENT_CONFIG = {
+  baseSepolia: {
+    label: "Base Sepolia",
+    aaveV3Pool: process.env.BASE_SEPOLIA_AAVE_V3_POOL ?? "0x0000000000000000000000000000000000000000",
+  },
+  base: {
+    label: "Base Mainnet",
+    aaveV3Pool: process.env.BASE_AAVE_V3_POOL ?? "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
+  },
+} as const;
+
 async function main() {
+  const networkName = hre.network.name as keyof typeof DEPLOYMENT_CONFIG;
+  const networkConfig = DEPLOYMENT_CONFIG[networkName];
+  if (!networkConfig) {
+    throw new Error(`Unsupported network '${hre.network.name}'. Use 'baseSepolia' or 'base'.`);
+  }
+
   const [deployer] = await hre.ethers.getSigners();
+  console.log(`Network: ${networkConfig.label} (${hre.network.name})`);
   console.log("Deploying contracts with the account:", deployer.address);
 
   // 1. Deploy Oracle (Sequencer Feed disabled for Testnet)
@@ -18,10 +36,9 @@ async function main() {
   const treasuryAddress = await treasury.getAddress();
   console.log("SentinelTreasury deployed to:", treasuryAddress);
 
-  // 3. Deploy Aave V3 Adapter (Polygon Amoy Aave V3 Pool)
+  // 3. Deploy Aave V3 Adapter
   const AaveAdapter = await hre.ethers.getContractFactory("AaveV3Adapter");
-  const amoyAavePool = "0xcC61144463Eca27d091176507A588147d34193Bc".toLowerCase();
-  const aaveAdapter = await AaveAdapter.deploy(amoyAavePool, deployer.address);
+  const aaveAdapter = await AaveAdapter.deploy(networkConfig.aaveV3Pool.toLowerCase(), deployer.address);
   await aaveAdapter.waitForDeployment();
   const aaveAdapterAddress = await aaveAdapter.getAddress();
   console.log("AaveV3Adapter deployed to:", aaveAdapterAddress);
@@ -40,6 +57,7 @@ async function main() {
 
   // Output summary for configuration
   console.log("\n--- DEPLOYMENT SUMMARY ---");
+  console.log(`NETWORK=${networkConfig.label}`);
   console.log(`ORACLE=${oracleAddress}`);
   console.log(`TREASURY=${treasuryAddress}`);
   console.log(`FACTORY=${factoryAddress}`);
