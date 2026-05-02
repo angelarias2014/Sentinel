@@ -33,6 +33,10 @@ async function main() {
     ? (process.env.BASE_SEQUENCER_FEED || "0x0000000000000000000000000000000000000000")
     : "0x0000000000000000000000000000000000000000";
 
+  // Optional external protocol addresses for additional adapters
+  const uniswapPositionManager = process.env.UNISWAP_V3_POSITION_MANAGER || "0x0000000000000000000000000000000000000000";
+  const balancerVaultAddress = process.env.BALANCER_VAULT_ADDRESS || "0x0000000000000000000000000000000000000000";
+
   // 1. SentinelTreasury
   console.log("Deploying SentinelTreasury...");
   const Treasury = await hre.ethers.getContractFactory("SentinelTreasury");
@@ -83,7 +87,31 @@ async function main() {
   const aaveAdapterAddress = await aaveAdapter.getAddress();
   console.log("AaveV3Adapter deployed to:", aaveAdapterAddress);
 
-  // 6. SentinelVaultFactory
+  // 6. UniswapV3Adapter
+  console.log("Deploying UniswapV3Adapter...");
+  const UniswapV3Adapter = await hre.ethers.getContractFactory("UniswapV3Adapter");
+  const uniswapAdapter = await UniswapV3Adapter.deploy(uniswapPositionManager, deployer.address);
+  await uniswapAdapter.waitForDeployment();
+  const uniswapAdapterAddress = await uniswapAdapter.getAddress();
+  console.log("UniswapV3Adapter deployed to:", uniswapAdapterAddress);
+
+  // 7. QuickswapV3Adapter
+  console.log("Deploying QuickswapV3Adapter...");
+  const QuickswapV3Adapter = await hre.ethers.getContractFactory("QuickswapV3Adapter");
+  const quickswapAdapter = await QuickswapV3Adapter.deploy(deployer.address);
+  await quickswapAdapter.waitForDeployment();
+  const quickswapAdapterAddress = await quickswapAdapter.getAddress();
+  console.log("QuickswapV3Adapter deployed to:", quickswapAdapterAddress);
+
+  // 8. BalancerV2Adapter
+  console.log("Deploying BalancerV2Adapter...");
+  const BalancerV2Adapter = await hre.ethers.getContractFactory("BalancerV2Adapter");
+  const balancerAdapter = await BalancerV2Adapter.deploy(balancerVaultAddress, deployer.address);
+  await balancerAdapter.waitForDeployment();
+  const balancerAdapterAddress = await balancerAdapter.getAddress();
+  console.log("BalancerV2Adapter deployed to:", balancerAdapterAddress);
+
+  // 9. SentinelVaultFactory
   console.log("Deploying SentinelVaultFactory...");
   const Factory = await hre.ethers.getContractFactory("SentinelVaultFactory");
   const factory = await Factory.deploy(aaveAdapterAddress, treasuryAddress, oracleAddress, deployer.address);
@@ -101,6 +129,10 @@ async function main() {
   console.log(`${prefix}ORACLE_ADDRESS=${oracleAddress}`);
   console.log(`${prefix}FACTORY_ADDRESS=${factoryAddress}`);
   console.log(`${prefix}ADAPTER_ADDRESS=${aaveAdapterAddress}`);
+  console.log(`${prefix}AAVE_ADAPTER_ADDRESS=${aaveAdapterAddress}`);
+  console.log(`${prefix}UNISWAP_ADAPTER_ADDRESS=${uniswapAdapterAddress}`);
+  console.log(`${prefix}QUICKSWAP_ADAPTER_ADDRESS=${quickswapAdapterAddress}`);
+  console.log(`${prefix}BALANCER_ADAPTER_ADDRESS=${balancerAdapterAddress}`);
   
   // Try to setup initial vault on Testnet
   if (!isMainnet) {
