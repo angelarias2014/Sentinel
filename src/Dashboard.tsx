@@ -487,16 +487,12 @@ export function Dashboard() {
                                    <p className="text-[10px] font-black text-zinc-700 uppercase mb-2">Network Layer</p>
                                    <p className="text-xs font-mono font-black text-zinc-300">{currentChainName}</p>
                                 </div>
-                                <div className="text-center">
-                                   <p className="text-[10px] font-black text-zinc-700 uppercase mb-2">Principal</p>
-                                   <p className="text-xs font-mono font-black text-white">
-                                     {hasBalance ? parseFloat(pos.formattedBalance).toLocaleString() : "0.00"} {token.symbol}
-                                   </p>
-                                </div>
-                                <div className="text-center">
-                                   <p className="text-[10px] font-black text-zinc-700 uppercase mb-2">Projected APY</p>
-                                   <p className="text-xs font-mono font-black text-emerald-500 tracking-tighter">CALCULATING...</p>
-                                </div>
+                                 <div className="text-center">
+                                    <p className="text-[10px] font-black text-zinc-700 uppercase mb-2">Principal</p>
+                                    <p className="text-xs font-mono font-black text-white">
+                                      {hasBalance ? parseFloat(pos.formattedBalance).toLocaleString() : "0.00"} {token.symbol}
+                                    </p>
+                                 </div>
                                 <div className="flex justify-end">
                                    <button onClick={() => {
                                      setSelectedAssetIdx(i);
