@@ -26,7 +26,7 @@ async function startServer() {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
       const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
+        model: "gemini-3-flash-preview",
         contents: `
           Eres un Auditor Senior de Seguridad Web3 y Analista de Riesgos para el Protocolo Sentinel Vault.
           Analiza este protocolo DeFi y devuelve un score de riesgo (0-100).
