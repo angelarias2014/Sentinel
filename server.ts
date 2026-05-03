@@ -2,7 +2,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
-import { GoogleGenAI, SchemaType } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -12,7 +12,7 @@ async function startServer() {
 
   app.use(express.json());
 
-  app.get("/api/health", (req, res) => {
+  app.get("/api/health", (_req, res) => {
     res.json({ status: "ok" });
   });
 
@@ -24,36 +24,35 @@ async function startServer() {
         throw new Error("GEMINI_API_KEY is not defined");
       }
 
-      const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({
-        model: "gemini-3-flash-preview",
-        generationConfig: {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: `
+          Eres un Auditor Senior de Seguridad Web3 y Analista de Riesgos para el Protocolo Sentinel Vault.
+          Analiza este protocolo DeFi y devuelve un score de riesgo (0-100).
+          
+          DATA:
+          ${JSON.stringify(protocolData)}
+          
+          Justificación en INGLÉS profesional.
+        `,
+        config: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: SchemaType.OBJECT,
+            type: Type.OBJECT,
             properties: {
-              score: { type: SchemaType.NUMBER },
-              status: { type: SchemaType.STRING },
-              justification: { type: SchemaType.STRING },
-              yieldAdjustment: { type: SchemaType.STRING }
+              score: { type: Type.NUMBER },
+              status: { type: Type.STRING },
+              justification: { type: Type.STRING },
+              yieldAdjustment: { type: Type.STRING }
             },
             required: ["score", "status", "justification", "yieldAdjustment"]
           }
         }
       });
 
-      const prompt = `
-        Eres un Auditor Senior de Seguridad Web3 y Analista de Riesgos para el Protocolo Sentinel Vault.
-        Analiza este protocolo DeFi y devuelve un score de riesgo (0-100).
-        
-        DATA:
-        ${JSON.stringify(protocolData)}
-        
-        Justificación en INGLÉS profesional.
-      `;
-
-      const result = await model.generateContent(prompt);
-      const analysis = JSON.parse(result.response.text());
+      const analysis = JSON.parse(response.text || "{}");
       res.json(analysis);
     } catch (error: any) {
       console.error("AI Analysis Error:", error);
@@ -80,7 +79,7 @@ async function startServer() {
     const distPath = path.join(process.cwd(), 'dist');
     console.log(`Serving static files from ${distPath}`);
     app.use(express.static(distPath));
-    app.get('*all', (req, res) => {
+    app.get('*all', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

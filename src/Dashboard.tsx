@@ -35,7 +35,7 @@ export function Dashboard() {
   const assets = useMemo(() => ASSETS[chainId as keyof typeof ASSETS] || ASSETS[SUPPORTED_CHAINS.BASE], [chainId]);
   const protocols = useMemo(() => PROTOCOLS[chainId as keyof typeof PROTOCOLS] || PROTOCOLS[SUPPORTED_CHAINS.BASE], [chainId]);
   const system = useMemo(() => VAULT_SYSTEM[chainId as keyof typeof VAULT_SYSTEM] || VAULT_SYSTEM[SUPPORTED_CHAINS.BASE], [chainId]);
-  const selectedAsset = assets[selectedAssetIdx] || assets[0];
+  const selectedAsset = assets[selectedAssetIdx] || assets[0] || { symbol: '', address: '', decimals: 0, vaultAddress: '' };
 
   const { data: isAdminRole } = useReadContract({
     address: system.FACTORY as `0x${string}`,
