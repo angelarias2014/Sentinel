@@ -26,7 +26,8 @@
     "solhint-plugin-prettier": "^0.1.0",
     "tailwind-merge": "^2.6.1",
     "viem": "^2.48.4",
-    "wagmi": "^2.19.5"
+    "wagmi": "^2.19.5",
+    "zod": "^4.1.5"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.1.2",

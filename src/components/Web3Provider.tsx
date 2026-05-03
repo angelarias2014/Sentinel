@@ -1,5 +1,5 @@
 import { WagmiProvider, createConfig, http } from "wagmi";
-import { base, baseSepolia } from "wagmi/chains";
+import { base, baseSepolia } from "viem/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConnectKitProvider, getDefaultConfig } from "connectkit";
 import { ReactNode } from "react";

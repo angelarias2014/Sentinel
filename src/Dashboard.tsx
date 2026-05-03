@@ -682,7 +682,7 @@ export function Dashboard() {
                                      </span>
                                   </div>
                                </div>
-                               <span className="text-[10px] font-mono text-zinc-800 uppercase italic">Suma de Verificación: {selectedAsset.address.slice(0, 10).toLowerCase()}</span>
+                                <span className="text-[10px] font-mono text-zinc-800 uppercase italic">Suma de Verificación: {selectedAsset?.address?.slice(0, 10).toLowerCase() || 'N/A'}</span>
                              </div>
                           </div>
 
@@ -749,7 +749,7 @@ export function Dashboard() {
                                   </div>
                                   <div>
                                      <p className="text-xs font-black text-zinc-300 group-hover:text-white transition-colors">{name.replace(/_/g, ' ')}</p>
-                                     <p className="text-[9px] font-mono text-zinc-700 uppercase tracking-tighter">{addr.slice(0, 20)}...</p>
+                                      <p className="text-[9px] font-mono text-zinc-700 uppercase tracking-tighter">{addr ? `${addr.slice(0, 20)}...` : 'N/A'}</p>
                                   </div>
                                </div>
                                <a 
