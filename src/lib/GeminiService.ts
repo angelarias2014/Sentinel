@@ -8,11 +8,13 @@ export async function analyzeProtocolRisk(protocolData: any) {
       body: JSON.stringify({ protocolData }),
     });
 
+    const body = await response.json();
+
     if (!response.ok) {
-      throw new Error("API request failed");
+      return body;
     }
 
-    return await response.json();
+    return body;
   } catch (error) {
     console.error("Gemini Proxy Error:", error);
     return { 
